@@ -27,8 +27,14 @@ type Server struct {
 	router    *web.Router
 }
 
+type Admin struct {
+	Username string
+	Password string
+}
+
 type context struct {
 	*Server
+	Admin *Admin
 }
 
 func (c *context) AdminRequired(rw web.ResponseWriter, r *web.Request, next web.NextMiddlewareFunc) {
@@ -52,27 +58,22 @@ func (c *context) AdminRequired(rw web.ResponseWriter, r *web.Request, next web.
 		return
 	}
 
-	if pair[0] != "username" && pair[1] != "password" {
+	if pair[0] != c.Admin.Username && pair[1] != c.Admin.Password {
 		http.Error(rw, "Not authorized", 401)
 		return
 	}
 
 	next(rw, r)
-
-	// user := userFromSession(r) // Pretend like this is defined. It reads a session cookie and returns a *User or nil.
-	// if user != nil {
-	// 	c.User = user
-	// 	next(rw, r)
-	// } else {
-	// 	rw.Header().Set("Location", "/")
-	// 	rw.WriteHeader(http.StatusMovedPermanently)
-	// 	// do NOT call next()
-	// }
 }
 
 // NewServer creates and returns a new server. The 'namespace' param is the redis namespace to use. The hostPort param is the address to bind on to expose the API.
-func NewServer(namespace string, pool *redis.Pool, hostPort string) *Server {
-	router := web.New(context{})
+func NewServer(namespace string, pool *redis.Pool, hostPort, username, password string) *Server {
+	router := web.New(context{
+		Admin: &Admin{
+			Username: username,
+			Password: password,
+		},
+	})
 	router.Middleware((*context).AdminRequired)
 	server := &Server{
 		namespace: namespace,
