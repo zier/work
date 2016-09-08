@@ -68,13 +68,14 @@ func (c *context) AdminRequired(rw web.ResponseWriter, r *web.Request, next web.
 
 // NewServer creates and returns a new server. The 'namespace' param is the redis namespace to use. The hostPort param is the address to bind on to expose the API.
 func NewServer(namespace string, pool *redis.Pool, hostPort, username, password string) *Server {
-	router := web.New(context{
+	c := context{
 		Admin: &Admin{
 			Username: username,
 			Password: password,
 		},
-	})
-	router.Middleware((*context).AdminRequired)
+	}
+	router := web.New(c)
+	router.Middleware(c.AdminRequired)
 	server := &Server{
 		namespace: namespace,
 		pool:      pool,
