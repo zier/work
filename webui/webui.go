@@ -13,7 +13,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/gocraft/web"
 	"github.com/gocraft/work"
-	"github.com/gocraft/work/webui/internal/assets"
+	"github.com/zier/work/webui/internal/assets"
 )
 
 // Server implements an HTTP server which exposes a JSON API to view and manage gocraft/work items.
@@ -32,32 +32,32 @@ type context struct {
 }
 
 func (c *context) AdminRequired(rw web.ResponseWriter, r *web.Request, next web.NextMiddlewareFunc) {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	rw.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(s) != 2 {
-		http.Error(w, "Not authorized", 401)
+		http.Error(rw, "Not authorized", 401)
 		return
 	}
 
 	b, err := base64.StdEncoding.DecodeString(s[1])
 	if err != nil {
-		http.Error(w, err.Error(), 401)
+		http.Error(rw, err.Error(), 401)
 		return
 	}
 
 	pair := strings.SplitN(string(b), ":", 2)
 	if len(pair) != 2 {
-		http.Error(w, "Not authorized", 401)
+		http.Error(rw, "Not authorized", 401)
 		return
 	}
 
 	if pair[0] != "username" && pair[1] != "password" {
-		http.Error(w, "Not authorized", 401)
+		http.Error(rw, "Not authorized", 401)
 		return
 	}
 
-	h.ServeHTTP(w, r)
+	next(rw, r)
 
 	// user := userFromSession(r) // Pretend like this is defined. It reads a session cookie and returns a *User or nil.
 	// if user != nil {
