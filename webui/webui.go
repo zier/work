@@ -1,10 +1,12 @@
 package webui
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/braintree/manners"
@@ -29,9 +31,49 @@ type context struct {
 	*Server
 }
 
+func (c *context) AdminRequired(rw web.ResponseWriter, r *web.Request, next web.NextMiddlewareFunc) {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(s) != 2 {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		http.Error(w, err.Error(), 401)
+		return
+	}
+
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	if pair[0] != "username" && pair[1] != "password" {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	h.ServeHTTP(w, r)
+
+	// user := userFromSession(r) // Pretend like this is defined. It reads a session cookie and returns a *User or nil.
+	// if user != nil {
+	// 	c.User = user
+	// 	next(rw, r)
+	// } else {
+	// 	rw.Header().Set("Location", "/")
+	// 	rw.WriteHeader(http.StatusMovedPermanently)
+	// 	// do NOT call next()
+	// }
+}
+
 // NewServer creates and returns a new server. The 'namespace' param is the redis namespace to use. The hostPort param is the address to bind on to expose the API.
 func NewServer(namespace string, pool *redis.Pool, hostPort string) *Server {
 	router := web.New(context{})
+	router.Middleware((*context).AdminRequired)
 	server := &Server{
 		namespace: namespace,
 		pool:      pool,
