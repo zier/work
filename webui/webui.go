@@ -75,7 +75,6 @@ func NewServer(namespace string, pool *redis.Pool, hostPort, username, password 
 		},
 	}
 	router := web.New(c)
-	router.Middleware(c.AdminRequired)
 	server := &Server{
 		namespace: namespace,
 		pool:      pool,
@@ -107,7 +106,9 @@ func NewServer(namespace string, pool *redis.Pool, hostPort, username, password 
 	//
 	// Build the HTML page:
 	//
+
 	assetRouter := router.Subrouter(context{}, "")
+	assetRouter.Middleware(c.AdminRequired)
 	assetRouter.Get("/", func(c *context, rw web.ResponseWriter, req *web.Request) {
 		rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 		rw.Write(assets.MustAsset("index.html"))
