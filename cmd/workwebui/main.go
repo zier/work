@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/gocraft/work/webui"
+	"github.com/zier/work/webui"
 )
 
 var (
@@ -36,7 +36,7 @@ func main() {
 
 	pool := newPool(*redisHostPort, database)
 
-	server := webui.NewServer(*redisNamespace, pool, *webHostPort)
+	server := webui.NewServer(*redisNamespace, pool, *webHostPort, "admin", "admin")
 	server.Start()
 
 	c := make(chan os.Signal, 1)
